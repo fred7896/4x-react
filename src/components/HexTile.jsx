@@ -30,9 +30,7 @@ export default function HexTile({ tile, size, onTileClick }) {
             onClick={() => onTileClick(tile)}
             title={`(${tile.q}, ${tile.r}) - ${tile.terrain}`}
         >
-            <div className='border-container'>
-
-            </div>
+            <div className='border-container'></div>
         </div>
     );
 }

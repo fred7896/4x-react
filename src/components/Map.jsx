@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import HexTile from './HexTile';
+import Unit from './Unit';
 import classNames from 'classnames';
 
 export default function Map() {
@@ -46,7 +47,6 @@ export default function Map() {
         return dx < clickThreshold && dy < clickThreshold;
     };
 
-    // 🖱️ Pan — déplacement à la souris
     const handleMouseDown = (e) => {
         if (e.button !== 0) return;
         setIsDragging(true);
@@ -146,8 +146,10 @@ export default function Map() {
                                 }
                             }}
                         />
+
                     ))
                 )}
+                <Unit size={size} />
             </div>
 
             {selectedTile && (
