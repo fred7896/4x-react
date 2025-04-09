@@ -4,9 +4,11 @@ import HexTile from './HexTile';
 import Unit from './Unit';
 import classNames from 'classnames';
 
+
 export default function Map() {
     const map = useGameStore((state) => state.map);
     const selectedTile = useGameStore((state) => state.selectedTile);
+    const units = useGameStore((state) => state.units);
     const size = 30;
 
     const containerRef = useRef(null);
@@ -149,7 +151,9 @@ export default function Map() {
 
                     ))
                 )}
-                <Unit size={size} />
+                {units.map((unit) => (
+                    <Unit key={unit.id} unit={unit} size={size} />
+                ))}
             </div>
 
             {selectedTile && (
