@@ -12,13 +12,43 @@ export const useGameStore = create((set, get) => ({
     players: [
         {
             id: 1,
-            name: 'Joueur 1',
+            name: 'Joueur Humain',
             type: 'human',
             faction: null,
+            isAI: false
+        },
+        {
+            id: 2,
+            name: 'IA Explorateur',
+            type: 'bot',
+            faction: null,
+            isAI: true
         },
     ],
 
+    initializeGame: () => {
+        set((state) => {
+            const usedIds = state.players.map((p) => p.faction?.id);
+            const available = [...factions].filter((f) => !usedIds.includes(f.id));
+
+            const updatedPlayers = state.players.map((p) => {
+                if (p.isAI && !p.faction) {
+                    const faction = available.shift();
+                    return { ...p, faction };
+                }
+                return p;
+            });
+
+            return { players: updatedPlayers };
+        });
+    },
+
     selectedPlayerId: 1,
+
+    turnIndex: 0, // ou 'selectedPlayerId'
+    nextTurn: () => set((state) => ({
+        turnIndex: (state.turnIndex + 1) % state.players.length,
+    })),
 
     phase: 'setup', // 'setup' | 'game'
 
@@ -59,6 +89,16 @@ export const useGameStore = create((set, get) => ({
                 ...u,
                 selected: u.id === id,
             })),
+        }));
+    },
+
+    updateUnitPosition: (unitId, newQ, newR) => {
+        set((state) => ({
+            units: state.units.map((unit) =>
+                unit.id === unitId
+                    ? { ...unit, q: newQ, r: newR }
+                    : unit
+            ),
         }));
     },
 
@@ -104,6 +144,30 @@ export const useGameStore = create((set, get) => ({
         }
     },
 
+    playAITurn: () => {
+        const { units, players, turnIndex, map, updateUnitPosition, nextTurn } = get();
+        const player = players[turnIndex];
+        if (!player.isAI) return;
+
+        const myUnits = units.filter(u => u.ownerId === player.id);
+
+        for (const unit of myUnits) {
+            const neighbors = getPassableNeighbors(unit.q, unit.r, map);
+            const free = neighbors.filter(tile =>
+                !units.some(u => u.q === tile.q && u.r === tile.r)
+            );
+
+            if (free.length > 0) {
+                const target = free[Math.floor(Math.random() * free.length)];
+                updateUnitPosition(unit.id, target.q, target.r);
+            }
+        }
+
+        setTimeout(() => {
+            nextTurn();
+        }, 300);
+    },
+
     getVictoryControl: () => {
         const { units, map } = get();
 
@@ -142,4 +206,25 @@ function isNeighbor(unit, tile) {
     return directions.some(([dq, dr]) =>
         unit.q + dq === tile.q && unit.r + dr === tile.r
     );
+}
+
+function getPassableNeighbors(q, r, map) {
+    const evenQDirections = [
+        [0, -1], [+1, -1], [+1, 0],
+        [0, +1], [-1, 0], [-1, -1],
+    ];
+
+    const oddQDirections = [
+        [0, -1], [+1, 0], [+1, +1],
+        [0, +1], [-1, +1], [-1, 0],
+    ];
+
+    const directions = q % 2 === 0 ? evenQDirections : oddQDirections;
+
+    return directions
+        .map(([dq, dr]) => {
+            const col = map[q + dq];
+            return col ? col[r + dr] : null;
+        })
+        .filter(tile => tile && tile.isPassable?.());
 }
