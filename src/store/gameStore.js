@@ -93,13 +93,40 @@ export const useGameStore = create((set, get) => ({
     },
 
     updateUnitPosition: (unitId, newQ, newR) => {
-        set((state) => ({
-            units: state.units.map((unit) =>
-                unit.id === unitId
-                    ? { ...unit, q: newQ, r: newR }
-                    : unit
-            ),
-        }));
+        set((state) => {
+            const addLog = get().addLog;
+            const movingUnit = state.units.find((u) => u.id === unitId);
+            if (!movingUnit) return {};
+
+            const mapTile = state.map[newQ]?.[newR];
+            if (!mapTile || !mapTile.isPassable()) {
+                return {};
+            }
+
+            const targetUnit = state.units.find(
+                (u) => u.q === newQ && u.r === newR
+            );
+
+            // Combat si ennemi sur la case
+            if (targetUnit && targetUnit.ownerId !== movingUnit.ownerId) {
+                addLog(`⚔️ ${movingUnit.id} attaque ${targetUnit.id} en (${newQ}, ${newR})`);
+                const filteredUnits = state.units.filter((u) => u.id !== targetUnit.id);
+                return {
+                    units: filteredUnits.map((u) =>
+                        u.id === unitId ? { ...u, q: newQ, r: newR } : u
+                    ),
+                };
+            } else {
+                addLog(`🚶 ${movingUnit.id} se déplace en (${newQ}, ${newR})`);
+            }
+
+            // Déplacement simple s’il n’y a pas d’unité ennemie
+            return {
+                units: state.units.map((u) =>
+                    u.id === unitId ? { ...u, q: newQ, r: newR } : u
+                ),
+            };
+        });
     },
 
     selectTile: (tile) => {
@@ -108,6 +135,7 @@ export const useGameStore = create((set, get) => ({
     },
 
     moveSelectedUnitTo: (tile) => {
+        console.log("moveSelectedUnitTo", tile);
         const units = get().units;
         const selectedUnit = units.find((u) => u.selected);
         if (!selectedUnit) return;
@@ -185,12 +213,19 @@ export const useGameStore = create((set, get) => ({
         }
 
         return controlled;
-    }
+    },
+
+    logs: [],
+
+    addLog: (message) => set((state) => ({
+        logs: [...state.logs, { message, id: Date.now() }],
+    })),
+
 
 }));
 
 // Vérifie si une tuile est voisine (6 directions en hexagone flat-top)
-function isNeighbor(unit, tile) {
+export function isNeighbor(unit, tile) {
     const evenQDirections = [
         [0, -1], [+1, -1], [+1, 0],
         [0, +1], [-1, 0], [-1, -1],

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
+import { isNeighbor } from '../store/gameStore';
 import classNames from 'classnames';
 
 export default function Unit({ unit, size }) {
-    const selectUnit = useGameStore((state) => state.selectUnit);
 
     const width = size * 2;
     const height = Math.sqrt(3) * size;
@@ -23,14 +23,40 @@ export default function Unit({ unit, size }) {
         top: `${y + height / 2 - 12}px`,
         //backgroundColor: unitColor,
         borderColor: unitColor,
-        cursor: unit.ownerId === currentPlayer.id ? 'pointer' : 'not-allowed',
+        cursor: 'pointer',
     };
 
     const handleClick = (e) => {
         e.stopPropagation();
-        if (unit.ownerId !== currentPlayer.id) return;
-        selectUnit(unit.id);
+
+        const units = useGameStore.getState().units;
+        const selectUnit = useGameStore.getState().selectUnit;
+        const updateUnitPosition = useGameStore.getState().updateUnitPosition;
+
+        const selectedUnit = units.find((u) => u.selected);
+        const isOwnedByPlayer = unit.ownerId === currentPlayer.id;
+
+        // 🎯 Cas 1 : attaque d'une unité ennemie
+        if (
+            selectedUnit &&
+            selectedUnit.ownerId === currentPlayer.id &&
+            !isOwnedByPlayer &&
+            isNeighbor(selectedUnit, unit)
+        ) {
+            updateUnitPosition(selectedUnit.id, unit.q, unit.r);
+            return;
+        }
+
+        // ✅ Cas 2 : sélection d'une unité du joueur
+        if (isOwnedByPlayer) {
+            selectUnit(unit.id);
+            return;
+        }
+
+        // ❌ Cas 3 : clic hors permission
     };
+
+
 
     return (
         <div

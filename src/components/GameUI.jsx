@@ -6,6 +6,7 @@ import TurnInfo from './TurnInfo';
 import NextTurnButton from './NextTurnButton';
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
+import LogPanel from './LogPanel';
 
 export default function GameUI() {
     const initializeGame = useGameStore(state => state.initializeGame);
@@ -24,6 +25,7 @@ export default function GameUI() {
                 <VictoryStatus />
                 <TurnInfo />
                 <NextTurnButton />
+                <LogPanel />
                 {/* Plus tard : tabs, unité sélectionnée, ressources, etc. */}
             </div>
         </div>
